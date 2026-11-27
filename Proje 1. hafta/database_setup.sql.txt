@@ -1,0 +1,96 @@
+IF DB_ID('BilgiIslemEnvanterDB') IS NULL
+BEGIN
+    CREATE DATABASE BilgiIslemEnvanterDB;
+END
+GO
+
+USE BilgiIslemEnvanterDB;
+GO
+
+IF OBJECT_ID('BakimKayitlari', 'U') IS NOT NULL DROP TABLE BakimKayitlari;
+IF OBJECT_ID('Arizalar', 'U') IS NOT NULL DROP TABLE Arizalar;
+IF OBJECT_ID('Cihazlar', 'U') IS NOT NULL DROP TABLE Cihazlar;
+IF OBJECT_ID('Teknisyenler', 'U') IS NOT NULL DROP TABLE Teknisyenler;
+IF OBJECT_ID('Birimler', 'U') IS NOT NULL DROP TABLE Birimler;
+GO
+
+CREATE TABLE Birimler (
+    BirimId INT IDENTITY(1,1) PRIMARY KEY,
+    BirimAdi NVARCHAR(100) NOT NULL,
+    KatBilgisi NVARCHAR(50)
+);
+
+CREATE TABLE Teknisyenler (
+    TeknisyenId INT IDENTITY(1,1) PRIMARY KEY,
+    AdSoyad NVARCHAR(100) NOT NULL,
+    Uzmanlik NVARCHAR(100),
+    AktifMi BIT NOT NULL DEFAULT 1
+);
+
+CREATE TABLE Cihazlar (
+    CihazId INT IDENTITY(1,1) PRIMARY KEY,
+    SeriNo NVARCHAR(50) NOT NULL UNIQUE,
+    Ad NVARCHAR(100) NOT NULL,
+    Tur NVARCHAR(50) NOT NULL,
+    AlisTarihi DATE NOT NULL,
+    BakimPeriyoduAy INT NOT NULL,
+    BirimId INT NOT NULL,
+    CONSTRAINT FK_Cihazlar_Birimler FOREIGN KEY (BirimId) REFERENCES Birimler(BirimId)
+);
+
+CREATE TABLE Arizalar (
+    ArizaId INT IDENTITY(1,1) PRIMARY KEY,
+    CihazId INT NOT NULL,
+    TeknisyenId INT NULL,
+    Aciklama NVARCHAR(250) NOT NULL,
+    Durum NVARCHAR(30) NOT NULL,
+    BildirimTarihi DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_Arizalar_Cihazlar FOREIGN KEY (CihazId) REFERENCES Cihazlar(CihazId),
+    CONSTRAINT FK_Arizalar_Teknisyenler FOREIGN KEY (TeknisyenId) REFERENCES Teknisyenler(TeknisyenId)
+);
+
+CREATE TABLE BakimKayitlari (
+    BakimId INT IDENTITY(1,1) PRIMARY KEY,
+    CihazId INT NOT NULL,
+    TeknisyenId INT NOT NULL,
+    BakimTarihi DATE NOT NULL,
+    Notlar NVARCHAR(250),
+    CONSTRAINT FK_Bakim_Cihazlar FOREIGN KEY (CihazId) REFERENCES Cihazlar(CihazId),
+    CONSTRAINT FK_Bakim_Teknisyenler FOREIGN KEY (TeknisyenId) REFERENCES Teknisyenler(TeknisyenId)
+);
+
+INSERT INTO Birimler (BirimAdi, KatBilgisi) VALUES
+(N'Bilgi İşlem', N'2. Kat'),
+(N'Muhasebe', N'1. Kat'),
+(N'İnsan Kaynakları', N'1. Kat'),
+(N'Lojistik', N'Zemin Kat');
+
+INSERT INTO Teknisyenler (AdSoyad, Uzmanlik, AktifMi) VALUES
+(N'Ahmet Kaya', N'Donanım ve Ağ', 1),
+(N'Zeynep Demir', N'Yazıcı ve Sistem', 1),
+(N'Mert Yılmaz', N'Ağ Altyapısı', 1);
+
+INSERT INTO Cihazlar (SeriNo, Ad, Tur, AlisTarihi, BakimPeriyoduAy, BirimId) VALUES
+(N'SN-PC-001', N'Ofis PC 1', N'Bilgisayar', '2024-01-15', 6, 1),
+(N'SN-PC-002', N'Ofis PC 2', N'Bilgisayar', '2024-02-10', 6, 2),
+(N'SN-PC-003', N'Ofis PC 3', N'Bilgisayar', '2024-03-05', 6, 2),
+(N'SN-PC-004', N'Ofis PC 4', N'Bilgisayar', '2024-04-12', 6, 3),
+(N'SN-PC-005', N'Ofis PC 5', N'Bilgisayar', '2024-05-20', 6, 3),
+(N'SN-PC-006', N'Depo Terminal 1', N'Bilgisayar', '2024-06-01', 6, 4),
+(N'SN-PC-007', N'Depo Terminal 2', N'Bilgisayar', '2024-06-15', 6, 4),
+(N'SN-PR-001', N'Muhasebe Lazer Yazıcı', N'Yazici', '2024-01-20', 3, 2),
+(N'SN-PR-002', N'İK Çok Fonksiyonlu Yazıcı', N'Yazici', '2024-02-25', 3, 3),
+(N'SN-PR-003', N'Depo Barkod Yazıcı 1', N'Yazici', '2024-03-18', 3, 4),
+(N'SN-PR-004', N'Depo Barkod Yazıcı 2', N'Yazici', '2024-04-02', 3, 4),
+(N'SN-NW-001', N'Ana Switch 24P', N'AgCihazi', '2023-11-10', 12, 1),
+(N'SN-NW-002', N'Kat 1 Access Point', N'AgCihazi', '2024-01-05', 12, 2),
+(N'SN-NW-003', N'Depo Router', N'AgCihazi', '2024-02-14', 12, 4),
+(N'SN-NW-004', N'Güvenlik Duvarı Cihazı', N'AgCihazi', '2023-12-01', 12, 1);
+
+INSERT INTO Arizalar (CihazId, TeknisyenId, Aciklama, Durum) VALUES
+(1, 1, N'Kasa açılmıyor, güç kaynağı arızası', N'Acik'),
+(8, 2, N'Kağıt sıkıştırma ve toner hatası', N'Islemde'),
+(12, 3, N'3. portta bağlantı kopması', N'Acik'),
+(10, 2, N'Barkod çıktısı silik geliyor', N'Cozuldu'),
+(6, 1, N'Ekran görüntüsü gidip geliyor', N'Kapali');
+GO
